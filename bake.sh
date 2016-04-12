@@ -6,7 +6,15 @@ function __remove_host {
     sudo bash -c 'sed -i "/nginx-auth-proxy/d" /etc/hosts'
 }
 
-function __deps {
+function __add_nginx_config {
+    sudo ln -s $HOME/nging-auth-proxy /etc/nginx/sites-enabled
+}
+
+function __remove_nginx_config {
+    sudo rm -f /etc/nginx/sites-enabled
+}
+
+function __install_deps {
     git clone https://github.com/cloudflare/lua-resty-cookie.git
     git clone https://github.com/openresty/lua-resty-redis.git
     git clone https://github.com/Tieske/uuid.git
