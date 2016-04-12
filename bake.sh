@@ -6,6 +6,13 @@ function __remove_host {
     sudo bash -c 'sed -i "/nginx-auth-proxy/d" /etc/hosts'
 }
 
+function __deps {
+    git clone https://github.com/cloudflare/lua-resty-cookie.git
+    git clone https://github.com/openresty/lua-resty-redis.git
+    git clone https://github.com/Tieske/uuid.git
+    git clone https://github.com/harningt/luajson.git
+}
+
 function __apply {
     sudo service nginx restart
 }
