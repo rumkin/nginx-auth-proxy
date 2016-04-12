@@ -15,6 +15,7 @@ function __remove_nginx_config {
 }
 
 function __install_deps {
+    cd lua
     git clone https://github.com/cloudflare/lua-resty-cookie.git
     git clone https://github.com/openresty/lua-resty-redis.git
     git clone https://github.com/Tieske/uuid.git
