@@ -1,0 +1,10 @@
+lua_package_path "/apps/nginx-auth-proxy/lua-resty-redis/lib/?.lua;/apps/nginx-auth-proxy/lua-resty-cookie/lib/?.lua;/apps/nginx-auth-proxy/luajson/lua/?.lua;/apps/nginx-auth-proxy/uuid/src/?.lua;";
+
+server {
+    server_name nginx-auth-proxy;
+    listen 80;
+
+    location / {
+        content_by_lua_file "/apps/nginx-auth-proxy/content.lua";
+    }
+}
