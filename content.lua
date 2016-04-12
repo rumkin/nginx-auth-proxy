@@ -5,7 +5,7 @@ local ok, err
 
 local redis = require "resty.redis"
 local ck = require "resty.cookie"
-local json = require "json"
+local json = require "cjson"
 
 -- create redis connection
 local red = redis:new()

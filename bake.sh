@@ -18,8 +18,10 @@ function __install_deps {
     cd lua
     git clone https://github.com/cloudflare/lua-resty-cookie.git
     git clone https://github.com/openresty/lua-resty-redis.git
+    git clone https://github.com/openresty/lua-cjson.git
     git clone https://github.com/Tieske/uuid.git
-    git clone https://github.com/harningt/luajson.git
+    # If there is problems with building lua-cjson
+    # git clone https://github.com/harningt/luajson.git
 }
 
 function __apply {
