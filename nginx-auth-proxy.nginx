@@ -1,5 +1,5 @@
-lua_package_path "/apps/nginx-auth-proxy/lua/lua-resty-redis/lib/?.lua;/apps/nginx-auth-proxy/lua/lua-resty-cookie/lib/?.lua;/apps/nginx-auth-proxy/lua/luajson/lua/?.lua;/apps/nginx-auth-proxy/lua/uuid/src/?.lua;";
-lua_package_cpath "/apps/nginx-auth-proxy/lua/lua-cjson/?.so";
+lua_package_path "/usr/share/lua/5.1/?.lua;/apps/nginx-auth-proxy/lua/lua-resty-redis/lib/?.lua;/apps/nginx-auth-proxy/lua/lua-resty-cookie/lib/?.lua;/apps/nginx-auth-proxy/lua/luajson/lua/?.lua;/apps/nginx-auth-proxy/lua/uuid/src/?.lua;";
+lua_package_cpath "/apps/nginx-auth-proxy/lua/luasocket-2.0.2/lib/?.so;/apps/nginx-auth-proxy/lua/lua-cjson/?.so";
 
 server {
     server_name nginx-auth-proxy;

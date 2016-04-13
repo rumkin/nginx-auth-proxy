@@ -6,76 +6,120 @@ local ok, err
 local redis = require "resty.redis"
 local ck = require "resty.cookie"
 local json = require "cjson"
+local http = require "socket.http"
+local ltn12 = require "ltn12"
+http.TIMEOUT = 5
 
--- create redis connection
-local red = redis:new()
-
-
-ok, err = red:connect("127.0.0.1", 6379)
-if not ok then
-    ngx.say("failed to connect: ", err)
-    return
-end
-
--- cookie parser
-local cookie, err = ck:new()
-if not cookie then
-    ngx.log(ngx.ERR, err)
-    return
-end
-
-local uuid = require "uuid"
-
--- Get session id from cookie. If cookie not found start new session
-local field, err = cookie:get("sid")
-if not field then
-    field = uuid()
-    ok, err = cookie:set({
-        key = "sid", value = field, path = "/",
-        -- secure = true,
-        httponly = true,
-        -- max_age = 50,
-        -- extension = "a4334aebaec"
-    })
-
-    if not ok then
-        ngx.log(ngx.ERR, err)
-    end
-end
-
-local params, err = red:get(field)
-if not params then
-    ngx.say("failed to get params: ", err)
-    return
-end
-
-if params == ngx.null then
-    params = {
-        counter = 10
-    }
-else
-    params = json.decode(params)
-end
-
-data = {counter = params.counter}
-
-if data.counter < 1 then
-    data.counter = 10
-else
-    data.counter = data.counter - 1
-end
-
-ok, err = red:set(field, json.encode(data))
-if not ok then
-    ngx.say("failed to set params: ", err)
-    return
-end
-
--- local headers = ngx.req.get_headers()
--- if headers["x-authenticate"] ~= nil then
---     ngx.say("auth header: " .. headers["x-authenticate"])
+-- -- create redis connection
+-- local red = redis:new()
+--
+--
+-- ok, err = red:connect("127.0.0.1", 6379)
+-- if not ok then
+--     ngx.say("failed to connect: ", err)
+--     return
+-- end
+--
+-- -- cookie parser
+-- local cookie, err = ck:new()
+-- if not cookie then
+--     ngx.log(ngx.ERR, err)
+--     return
+-- end
+--
+-- local uuid = require "uuid"
+--
+-- -- Get session id from cookie. If cookie not found start new session
+-- local field, err = cookie:get("sid")
+-- if not field then
+--     field = uuid()
+--     ok, err = cookie:set({
+--         key = "sid", value = field, path = "/",
+--         -- secure = true,
+--         httponly = true,
+--         -- max_age = 50,
+--         -- extension = "a4334aebaec"
+--     })
+--
+--     if not ok then
+--         ngx.log(ngx.ERR, err)
+--     end
+-- end
+--
+-- local params, err = red:get(field)
+-- if not params then
+--     ngx.say("failed to get params: ", err)
+--     return
+-- end
+--
+-- if params == ngx.null then
+--     params = {
+--         counter = 10
+--     }
 -- else
---     ngx.say("-")
+--     params = json.decode(params)
+-- end
+--
+-- data = {counter = params.counter}
+--
+-- if data.counter < 1 then
+--     data.counter = 10
+-- else
+--     data.counter = data.counter - 1
+-- end
+--
+-- ok, err = red:set(field, json.encode(data))
+-- if not ok then
+--     ngx.say("failed to set params: ", err)
+--     return
 -- end
 
-ngx.say(params.counter)
+local headers = ngx.req.get_headers()
+
+if headers["x-authenticate"] == "signature" then
+    local user = headers["x-auth-user"]
+    local sign = headers["x-auth-sign"]
+    local data = json.encode({user=user, signature=sign})
+    local respBody = {}
+    local body, status, headers = http.request({
+            url="http://localhost:1999",
+            method="POST",
+            headers={
+                ["Content-Type"] = "application/json",
+                ["Content-Length"] = #data,
+            },
+            source = ltn12.source.string(data),
+            sink = ltn12.sink.table(respBody)
+        }
+    )
+
+    local auth = json.decode(table.concat(respBody))
+    ngx.log(ngx.ERR, status, " ", body, json.encode(auth))
+
+    if auth.result == true then
+        ngx.say("authenticated")
+    else
+        ngx.say("not authenticated")
+    end
+
+
+    -- local res = ngx.location.capture("/--auth-proxy", {
+    --     method = ngx.HTTP_POST,
+    --     headers= {
+    --         ["content-type"] = "application/json"
+    --     },
+    --     body = data
+    -- })
+    --
+    -- ngx.log(ngx.ERR, res.status, res.body)
+    --
+    -- if res.status == 200 then
+    --     ngx.say("authenticated", res.body)
+    -- else
+    --     ngx.say("not authenticated " .. res.body)
+    -- end
+else
+    ngx.say("No auth")
+end
+
+-- ngx.say(params.counter)

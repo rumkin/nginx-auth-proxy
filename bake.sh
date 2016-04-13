@@ -29,11 +29,23 @@ function __apply {
 }
 
 function __log {
-    sudo cat /var/log/nginx/error.log
+    sudo tail -n 40 /var/log/nginx/error.log
 }
 
 function __run {
-    curl -b tmp/cookie -c tmp/cookie -sS http://nginx-auth-proxy/
+    node test/auth-server.js 1999 &
+
+    SERVER_PID=$!
+    sleep 1
+
+    curl -sS \
+        -H 'x-authenticate: signature' \
+        -H 'x-auth-user: user' \
+        -H 'x-auth-sign: signature' \
+        -b tmp/cookie -c tmp/cookie \
+        http://nginx-auth-proxy/
+
+    kill -s 9 $SERVER_PID
 }
 
 function __test {
