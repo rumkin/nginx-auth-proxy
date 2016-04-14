@@ -6,9 +6,7 @@ local ok, err
 local redis = require "resty.redis"
 local ck = require "resty.cookie"
 local json = require "cjson"
-local http = require "socket.http"
-local ltn12 = require "ltn12"
-http.TIMEOUT = 5
+local http = require "resty.http"
 
 -- -- create redis connection
 -- local red = redis:new()
@@ -74,52 +72,38 @@ http.TIMEOUT = 5
 --     return
 -- end
 
+-- ngx.say(params.counter)
+
 local headers = ngx.req.get_headers()
 
 if headers["x-authenticate"] == "signature" then
     local user = headers["x-auth-user"]
     local sign = headers["x-auth-sign"]
     local data = json.encode({user=user, signature=sign})
-    local respBody = {}
-    local body, status, headers = http.request({
-            url="http://localhost:1999",
+    local res, err = http.new():request_uri(
+        "http://127.0.0.1:1999",
+        {
             method="POST",
             headers={
                 ["Content-Type"] = "application/json",
-                ["Content-Length"] = #data,
+                -- ["Content-Length"] = #data,
             },
-            source = ltn12.source.string(data),
-            sink = ltn12.sink.table(respBody)
+            body= data
         }
     )
 
-    local auth = json.decode(table.concat(respBody))
-    ngx.log(ngx.ERR, status, " ", body, json.encode(auth))
-
-    if auth.result == true then
-        ngx.say("authenticated")
-    else
+    if err ~= nil then
+        ngx.log(ngx.ERR, "Request failed: ", err)
         ngx.say("not authenticated")
+    else
+        local auth = json.decode(res.body)
+
+        if auth.result == true then
+            ngx.say("authenticated")
+        else
+            ngx.say("not authenticated")
+        end
     end
-
-
-    -- local res = ngx.location.capture("/--auth-proxy", {
-    --     method = ngx.HTTP_POST,
-    --     headers= {
-    --         ["content-type"] = "application/json"
-    --     },
-    --     body = data
-    -- })
-    --
-    -- ngx.log(ngx.ERR, res.status, res.body)
-    --
-    -- if res.status == 200 then
-    --     ngx.say("authenticated", res.body)
-    -- else
-    --     ngx.say("not authenticated " .. res.body)
-    -- end
 else
-    ngx.say("No auth")
+    ngx.say("not authenticated")
 end
-
--- ngx.say(params.counter)
