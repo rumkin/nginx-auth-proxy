@@ -9,5 +9,6 @@ server {
     location / {
         rewrite_by_lua_file "/apps/nginx-auth-proxy/content.lua";
         proxy_pass "http://unix:/tmp/nginx/echo.sock";
+        proxy_set_header Host $host;
     }
 }
