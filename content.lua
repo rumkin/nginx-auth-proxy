@@ -7,78 +7,89 @@ local redis = require "resty.redis"
 local ck = require "resty.cookie"
 local json = require "cjson"
 local http = require "resty.http"
+local uuid = require "uuid"
 
--- -- create redis connection
--- local red = redis:new()
---
---
--- ok, err = red:connect("127.0.0.1", 6379)
--- if not ok then
---     ngx.say("failed to connect: ", err)
---     return
--- end
---
--- -- cookie parser
--- local cookie, err = ck:new()
--- if not cookie then
---     ngx.log(ngx.ERR, err)
---     return
--- end
---
--- local uuid = require "uuid"
---
--- -- Get session id from cookie. If cookie not found start new session
--- local field, err = cookie:get("sid")
--- if not field then
---     field = uuid()
---     ok, err = cookie:set({
---         key = "sid", value = field, path = "/",
---         -- secure = true,
---         httponly = true,
---         -- max_age = 50,
---         -- extension = "a4334aebaec"
---     })
---
---     if not ok then
---         ngx.log(ngx.ERR, err)
---     end
--- end
---
--- local params, err = red:get(field)
--- if not params then
---     ngx.say("failed to get params: ", err)
---     return
--- end
---
--- if params == ngx.null then
---     params = {
---         counter = 10
---     }
--- else
---     params = json.decode(params)
--- end
---
--- data = {counter = params.counter}
---
--- if data.counter < 1 then
---     data.counter = 10
--- else
---     data.counter = data.counter - 1
--- end
---
--- ok, err = red:set(field, json.encode(data))
--- if not ok then
---     ngx.say("failed to set params: ", err)
---     return
--- end
+Auth = {}
 
--- ngx.say(params.counter)
+-- Add value into redis store
+function Auth.set_redis(id, data)
+    local ok, err
+    local red = redis:new()
+
+    ok, err = red:connect("127.0.0.1", 6379)
+    if not ok then
+        return false, err
+    end
+
+    ok, err = red:set(id, json.encode(data))
+    if not ok then
+        return false, err
+    end
+
+    red:close()
+    return true, nil
+end
+
+-- Get value from redis store
+function Auth.get_redis(id)
+    local ok, err, value
+    local red = redis:new()
+
+    ok, err = red:connect("127.0.0.1", 6379)
+    if not ok then
+        return nil, err
+    end
+
+    value, err = red:get(id, json.encode(data))
+    if not ok then
+        return nil, err
+    end
+
+    if value ~= ngx.null then
+        value = json.decode(value)
+    end
+
+    red:close()
+
+    return value, nil
+end
+
+-- Set cookie value
+function Auth.set_cookie(key, value)
+    local ok, err
+    local cookie, err = ck:new()
+
+    if not cookie then
+        return false, err
+    end
+
+    ok, err = cookie:set({
+        key = key, value = value, path = "/",
+        httponly = true,
+    })
+
+    if not ok then
+        return ok, err
+    end
+
+    return true, nil
+end
+
+-- Set cookie value
+function Auth.get_cookie(key)
+    local cookie, err = ck:new()
+    if not cookie then
+        return false, err
+    end
+
+    return cookie:get(key)
+end
 
 local headers = ngx.req.get_headers()
 
-if headers["x-authenticate"] == "web-rsa" then
+if headers["x-authenticate"] == "web-rsa" and headers["x-auth-type"] == "authenticate" then
     local user = headers["x-auth-user"]
-    local sign = headers["x-auth-sign"]
+    local signature = headers["x-auth-sign"]
     local host
 
     local i = user:find("@")
@@ -90,7 +101,7 @@ if headers["x-authenticate"] == "web-rsa" then
         user = user:sub(1, i - 1)
     end
 
-    local data = json.encode({user=user, signature=sign})
+    local data = json.encode({user=user, signature=signature})
 
     local res, err = http.new():request_uri(
         "http://" .. host .. ":1999",
@@ -104,9 +115,9 @@ if headers["x-authenticate"] == "web-rsa" then
         }
     )
 
+    local success = true
     if err ~= nil then
         ngx.log(ngx.ERR, "Request failed: ", err)
-        ngx.say("not authenticated")
     else
         local body = json.decode(res.body)
 
@@ -119,11 +130,45 @@ if headers["x-authenticate"] == "web-rsa" then
         end
 
         if body.result == true then
-            ngx.say("authenticated")
-        else
-            ngx.say("not authenticated")
+            local sid = uuid()
+
+            ok, err = Auth.set_redis(sid, {user = user, signature = signature})
+            if not ok then
+                ngx.log(ngx.ERR, "Redis error: ", err)
+            else
+                ok, err = Auth.set_cookie("sid", sid)
+                if not ok then
+                    ngx.log(ngx.Err, "Cookie error: ", err)
+                else
+                    success = true
+                end
+            end
         end
     end
+
+    if success then
+        ngx.req.set_header("x-auth-verified", 1)
+    else
+        ngx.req.set_header("x-auth-verified", nil)
+    end
 else
-    ngx.say("not authenticated")
+    local data
+    local sid, err = Auth.get_cookie("sid")
+
+    if sid ~= nil then
+        data, err = Auth.get_redis(sid)
+
+        if data == ngx.null then
+            data = nil
+        end
+    end
+
+    if data ~= nil then
+        ngx.request.set_header("x-authenticate", 'web-rsa')
+        ngx.request.set_header("x-auth-user", data.user)
+        ngx.request.set_header("x-auth-sign", data.signature)
+        ngx.request.set_header("x-auth-verified", 1)
+    else
+        ngx.request.set_header("x-auth-verified", 0)
+    end
 end

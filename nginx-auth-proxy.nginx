@@ -7,6 +7,7 @@ server {
     resolver 8.8.8.8;
 
     location / {
-        content_by_lua_file "/apps/nginx-auth-proxy/content.lua";
+        rewrite_by_lua_file "/apps/nginx-auth-proxy/content.lua";
+        proxy_pass "http://unix:/tmp/nginx/echo.sock";
     }
 }

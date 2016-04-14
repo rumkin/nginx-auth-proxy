@@ -20,6 +20,8 @@ function __install_deps {
     git clone https://github.com/openresty/lua-resty-redis.git
     git clone https://github.com/openresty/lua-cjson.git
     git clone https://github.com/Tieske/uuid.git
+    git clone https://github.com/pintsized/lua-resty-http.git
+
     # If there is problems with building lua-cjson
     # git clone https://github.com/harningt/luajson.git
 }
@@ -34,12 +36,20 @@ function __log {
 
 function __run {
     node test/auth-server.js 1999 &
+    AUTH_SRV_PID=$!
 
-    SERVER_PID=$!
+    SOCKET=/tmp/nginx/echo.sock
+    ls $(dirname $SOCKET) | grep $(basename $SOCKET) && rm $SOCKET
+    node test/echo.js $SOCKET &
+
+    ECHO_SRV_PID=$!
+
     sleep 1
 
     node test/request.js
-    kill -s 9 $SERVER_PID
+
+    kill -s 9 $ECHO_SRV_PID
+    kill -s 9 $AUTH_SRV_PID
 }
 
 function __test {

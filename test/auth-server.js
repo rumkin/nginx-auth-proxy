@@ -33,7 +33,7 @@ http.createServer((req, res) => {
     });
 
     req.on('end', () => {
-        var data = chunks.map(chunk => chunk.toString()).join('');
+        var data = Buffer.concat(chunks).toString();
 
         try {
             data = JSON.parse(data);
@@ -59,5 +59,5 @@ http.createServer((req, res) => {
     });
 })
 .listen(port, () => {
-    console.log('Server is started at 0.0.0.0:%s', port);
+    console.log('Server is started at port %s', port);
 });
