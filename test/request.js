@@ -10,7 +10,7 @@ fetch('http://nginx-auth-proxy', {
     method: 'POST',
     headers: {
         'x-authenticate': 'web-rsa',
-        'x-auth-user': 'user',
+        'x-auth-user': 'user@127.0.0.1',
         'x-auth-sign': ed.sign('nginx-auth-proxy', sign.publicKey, sign.secretKey).toString('hex'),
     }
 })

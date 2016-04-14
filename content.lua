@@ -79,9 +79,21 @@ local headers = ngx.req.get_headers()
 if headers["x-authenticate"] == "web-rsa" then
     local user = headers["x-auth-user"]
     local sign = headers["x-auth-sign"]
+    local host
+
+    local i = user:find("@")
+
+    if i == nil then
+        host = "127.0.0.1"
+    else
+        host = user:sub(i + 1)
+        user = user:sub(1, i - 1)
+    end
+
     local data = json.encode({user=user, signature=sign})
+
     local res, err = http.new():request_uri(
-        "http://127.0.0.1:1999",
+        "http://" .. host .. ":1999",
         {
             method="POST",
             headers={
@@ -96,9 +108,17 @@ if headers["x-authenticate"] == "web-rsa" then
         ngx.log(ngx.ERR, "Request failed: ", err)
         ngx.say("not authenticated")
     else
-        local auth = json.decode(res.body)
+        local body = json.decode(res.body)
 
-        if auth.result == true then
+        if res.status ~= 200 then
+            if body.error then
+                ngx.log(ngx.WARN, "WebRSA request failed: ", body.error)
+            else
+                ngx.log(ngx.WARN, "WebRSA request failed: ", res.body)
+            end
+        end
+
+        if body.result == true then
             ngx.say("authenticated")
         else
             ngx.say("not authenticated")
