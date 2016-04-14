@@ -38,13 +38,7 @@ function __run {
     SERVER_PID=$!
     sleep 1
 
-    curl -sS \
-        -H 'x-authenticate: signature' \
-        -H 'x-auth-user: user' \
-        -H 'x-auth-sign: signature' \
-        -b tmp/cookie -c tmp/cookie \
-        http://nginx-auth-proxy/
-
+    node test/request.js
     kill -s 9 $SERVER_PID
 }
 

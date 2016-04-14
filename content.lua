@@ -76,7 +76,7 @@ local http = require "resty.http"
 
 local headers = ngx.req.get_headers()
 
-if headers["x-authenticate"] == "signature" then
+if headers["x-authenticate"] == "web-rsa" then
     local user = headers["x-auth-user"]
     local sign = headers["x-auth-sign"]
     local data = json.encode({user=user, signature=sign})

@@ -4,7 +4,8 @@ lua_package_cpath "/apps/nginx-auth-proxy/lua/lua-cjson/?.so";
 server {
     server_name nginx-auth-proxy;
     listen 80;
-    
+    resolver 8.8.8.8;
+
     location / {
         content_by_lua_file "/apps/nginx-auth-proxy/content.lua";
     }
