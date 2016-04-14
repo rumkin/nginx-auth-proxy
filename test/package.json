@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "ed25519-supercop": "^1.0.2",
     "node-fetch": "^1.5.0"
   }
 }
