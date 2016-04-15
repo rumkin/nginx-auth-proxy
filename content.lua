@@ -87,7 +87,7 @@ end
 
 local headers = ngx.req.get_headers()
 
-if headers["x-authenticate"] == "web-rsa" and headers["x-auth-type"] == "authenticate" then
+if headers["authorization"] == "web-rsa" and headers["x-auth-type"] == "authenticate" then
     local user = headers["x-auth-user"]
     local signature = headers["x-auth-sign"]
     local host
@@ -164,11 +164,11 @@ else
     end
 
     if data ~= nil then
-        ngx.request.set_header("x-authenticate", 'web-rsa')
-        ngx.request.set_header("x-auth-user", data.user)
-        ngx.request.set_header("x-auth-sign", data.signature)
-        ngx.request.set_header("x-auth-verified", 1)
+        ngx.req.set_header("authorization", 'web-rsa')
+        ngx.req.set_header("x-auth-user", data.user)
+        ngx.req.set_header("x-auth-sign", data.signature)
+        ngx.req.set_header("x-auth-verified", 1)
     else
-        ngx.request.set_header("x-auth-verified", 0)
+        ngx.req.set_header("x-auth-verified", 0)
     end
 end

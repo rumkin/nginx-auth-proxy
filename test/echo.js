@@ -4,6 +4,10 @@ const http = require('http');
 const port = process.argv[2] || 8080;
 
 http.createServer((req, res) => {
+    res.connection.on('finish', () => {
+        console.log(req.headers);
+    });
+
     // Read body
     if (req.method === 'GET') {
         res.end('echo');
@@ -18,10 +22,6 @@ http.createServer((req, res) => {
 
     req.on('end', () => {
         res.end(Buffer.concat(chunks));
-    });
-
-    res.connection.on('finish', () => {
-        console.log(req.headers);
     });
 })
 .listen(port, () => {

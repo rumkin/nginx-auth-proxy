@@ -46,7 +46,7 @@ function __run {
 
     sleep 1
 
-    node test/request.js
+    FORCE_COLOR=1 node test/request.js
 
     kill -s 9 $ECHO_SRV_PID
     kill -s 9 $AUTH_SRV_PID
