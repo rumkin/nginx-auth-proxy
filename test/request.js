@@ -19,7 +19,11 @@ fetch('http://nginx-auth-proxy', {
     }
 })
 .then(res => {
-    cookies = res.headers.get('set-cookies').map(cookie => cookie.split(' ').shift());
+    cookies = res.headers.get('set-cookie');
+    if (! Array.isArray(cookies)) {
+        cookies = [cookies];
+    }
+    cookies = cookies.map(cookie => cookie.split(' ').shift());
     return res.text();
 })
 .then(text => console.log(chalk.yellow(text)))
