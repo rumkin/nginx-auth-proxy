@@ -40,7 +40,7 @@ function Auth.get_redis(id)
         return nil, err
     end
 
-    value, err = red:get(id, json.encode(data))
+    value, err = red:get(id)
     if not ok then
         return nil, err
     end
@@ -155,6 +155,7 @@ else
     local data
     local sid, err = Auth.get_cookie("sid")
 
+    ngx.log(ngx.ERR, "SID '", sid, "'")
     if sid ~= nil then
         data, err = Auth.get_redis(sid)
 

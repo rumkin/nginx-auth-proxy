@@ -7,11 +7,11 @@ function __remove_host {
 }
 
 function __add_nginx_config {
-    sudo ln -s $HOME/nging-auth-proxy /etc/nginx/sites-enabled
+    sudo ln -s $PWD/nginx-auth-proxy.nginx /etc/nginx/sites-enabled/nginx-auth-proxy
 }
 
-function __remove_nginx_config {
-    sudo rm -f /etc/nginx/sites-enabled
+function __rm_nginx_config {
+    sudo rm -f /etc/nginx/sites-enabled/nginx-auth-proxy
 }
 
 function __install_deps {
@@ -24,6 +24,24 @@ function __install_deps {
 
     # If there is problems with building lua-cjson
     # git clone https://github.com/harningt/luajson.git
+}
+
+function __build {
+    if [ -z "$DIR" ]
+    then
+        DIR=$PWD
+    fi
+
+    # Socket could be empty but should be set manually
+    SOCKET=$1
+    if [ -z "$SOCKET" ]
+    then
+        echo "Socket path isn't set. You should specify it manually" >&2
+    fi
+
+    CFG=$(cat ./src/nginx-auth-proxy.nginx | sed "s#\${DIR}#$DIR#g" | sed "s#\${SOCKET}#$SOCKET#g" )
+
+    echo "$CFG" > nginx-auth-proxy.nginx
 }
 
 function __apply {

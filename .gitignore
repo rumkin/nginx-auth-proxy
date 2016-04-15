@@ -2,3 +2,4 @@ lua
 **/.DS_Store
 **/node_modules
 tmp
+nginx-auth-proxy.nginx

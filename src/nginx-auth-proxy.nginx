@@ -1,0 +1,14 @@
+lua_package_path "${DIR}/lua/lua-resty-http/lib/?.lua;${DIR}/lua/lua-resty-redis/lib/?.lua;${DIR}/lua/lua-resty-cookie/lib/?.lua;${DIR}/lua/luajson/lua/?.lua;${DIR}/lua/uuid/src/?.lua;";
+lua_package_cpath "${DIR}/lua/lua-cjson/?.so";
+
+server {
+    server_name nginx-auth-proxy;
+    listen 80;
+    resolver 8.8.8.8;
+
+    location / {
+        rewrite_by_lua_file "${DIR}/rewrite.lua";
+        proxy_pass "http://unix:${SOCKET}";
+        proxy_set_header Host $host;
+    }
+}

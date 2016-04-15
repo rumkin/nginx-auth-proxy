@@ -23,12 +23,12 @@ fetch('http://nginx-auth-proxy', {
     if (! Array.isArray(cookies)) {
         cookies = [cookies];
     }
-    cookies = cookies.map(cookie => cookie.split(' ').shift());
+    cookies = cookies.map(cookie => cookie.split(' ').shift().slice(0, -1));
     return res.text();
 })
 .then(text => console.log(chalk.yellow(text)))
 .then(() => fetch('http://nginx-auth-proxy',
-    {headers: {cookies}}
+    {headers: {cookie: cookies}}
 ))
 .then(res => res.text())
 .then(text => console.log(chalk.yellow(text)))
