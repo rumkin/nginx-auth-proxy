@@ -5,7 +5,7 @@ local ok, err
 
 local redis = require "resty.redis"
 local ck = require "resty.cookie"
-local json = require "cjson"
+local json = require "json"
 local http = require "resty.http"
 local uuid = require "uuid"
 

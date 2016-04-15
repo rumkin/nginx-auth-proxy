@@ -18,12 +18,12 @@ function __install_deps {
     cd lua
     git clone https://github.com/cloudflare/lua-resty-cookie.git
     git clone https://github.com/openresty/lua-resty-redis.git
-    git clone https://github.com/openresty/lua-cjson.git
     git clone https://github.com/Tieske/uuid.git
     git clone https://github.com/pintsized/lua-resty-http.git
+    git clone https://github.com/harningt/luajson.git
 
-    # If there is problems with building lua-cjson
-    # git clone https://github.com/harningt/luajson.git
+    # Json parser writtn in C (need compilation)
+    # git clone https://github.com/openresty/lua-cjson.git
 }
 
 function __build {
@@ -39,7 +39,22 @@ function __build {
         echo "Socket path isn't set. You should specify it manually" >&2
     fi
 
-    CFG=$(cat ./src/nginx-auth-proxy.nginx | sed "s#\${DIR}#$DIR#g" | sed "s#\${SOCKET}#$SOCKET#g" )
+    if [ -d "/usr/lib/lua/5.1" ] # Arch
+    then
+        LUA_INCLUDE_CPATH=/usr/lib/lua/5.1
+    if [ -d "/usr/lib/i686-linux-gnu/lua/5.1" ] # Ubuntu, Debian; i686
+    then
+        LUA_INCLUDE_CPATH=/usr/lib/i686-linux-gnu/lua/5.1
+    elif [ -d "/usr/lib/i686/lua/5.1" ] # Ubuntu, Debian; x64
+    then
+        LUA_INCLUDE_CPATH=/usr/lib/x86_64-linux-gnu/lua/5.1
+    fi
+
+    CFG=$(cat ./src/nginx-auth-proxy.nginx \
+        | sed "s#\${DIR}#$DIR#g" \
+        | sed "s#\${SOCKET}#$SOCKET#g" \
+        | sed "s#\${LUA_INCLUDE_CPATH}#$LUA_INCLUDE_CPATH#g" \
+    )
 
     echo "$CFG" > nginx-auth-proxy.nginx
 }
