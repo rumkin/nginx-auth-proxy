@@ -1,0 +1,8 @@
+#!/bin/bash
+
+. bake.sh
+
+cmd=$(echo "$1" | sed "s/-/_/g" )
+shift 1
+
+__$cmd $@

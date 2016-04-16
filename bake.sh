@@ -15,6 +15,7 @@ function __rm_nginx_config {
 }
 
 function __install_deps {
+    [ ! -d "lua" ] &&mkdir lua
     cd lua
     git clone https://github.com/cloudflare/lua-resty-cookie.git
     git clone https://github.com/openresty/lua-resty-redis.git
@@ -42,7 +43,7 @@ function __build {
     if [ -d "/usr/lib/lua/5.1" ] # Arch
     then
         LUA_INCLUDE_CPATH=/usr/lib/lua/5.1
-    if [ -d "/usr/lib/i686-linux-gnu/lua/5.1" ] # Ubuntu, Debian; i686
+    elif [ -d "/usr/lib/i686-linux-gnu/lua/5.1" ] # Ubuntu, Debian; i686
     then
         LUA_INCLUDE_CPATH=/usr/lib/i686-linux-gnu/lua/5.1
     elif [ -d "/usr/lib/i686/lua/5.1" ] # Ubuntu, Debian; x64
@@ -51,9 +52,9 @@ function __build {
     fi
 
     CFG=$(cat ./src/nginx-auth-proxy.nginx \
-        | sed "s#\${DIR}#$DIR#g" \
-        | sed "s#\${SOCKET}#$SOCKET#g" \
-        | sed "s#\${LUA_INCLUDE_CPATH}#$LUA_INCLUDE_CPATH#g" \
+        | sed "s:\${DIR}:$DIR:g" \
+        | sed "s:\${SOCKET}:$SOCKET:g" \
+        | sed "s:\${LUA_INCLUDE_CPATH}:$LUA_INCLUDE_CPATH:g" \
     )
 
     echo "$CFG" > nginx-auth-proxy.nginx
