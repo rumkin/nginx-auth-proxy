@@ -62,4 +62,4 @@ git clone https://github.com/Tieske/uuid.git
 ```
 
 Now you can configure `nginx-auth-proxy.nginx` to setup listening and redirection
-hosts. Than put this file into nginx configuretion directory.
+hosts. Than put this file into nginx configuration directory.
