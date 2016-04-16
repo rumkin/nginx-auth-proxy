@@ -41,7 +41,8 @@ sudo apt-get install nginx lua5.1 lua-lpeg
 ```
 
 Than call `bake` to build nginx configuration:
-```
+
+```bash
 bake install-deps
 bake build # Optional parameter is unix socket or port for proxying
 ```
@@ -49,7 +50,8 @@ bake build # Optional parameter is unix socket or port for proxying
 Or if you have no bake just use `bin/bake`
 
 Manual installation of dependencies:
-```
+
+```bash
 mkdir lua
 cd lua
 git clone https://github.com/cloudflare/lua-resty-cookie.git
