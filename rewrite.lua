@@ -132,11 +132,11 @@ if headers["authorization"] == "web-rsa" and headers["x-auth-type"] == "authenti
         if body.result == true then
             local sid = uuid()
 
-            ok, err = Auth.set_redis(sid, {user = user, signature = signature})
+            ok, err = Auth.set_redis(sid, {user = user, signature = signature, ip = ngx.var.remote_addr})
             if not ok then
                 ngx.log(ngx.ERR, "Redis error: ", err)
             else
-                ok, err = Auth.set_cookie("sid", sid)
+                ok, err = Auth.set_cookie("auth", sid)
                 if not ok then
                     ngx.log(ngx.Err, "Cookie error: ", err)
                 else
@@ -153,7 +153,7 @@ if headers["authorization"] == "web-rsa" and headers["x-auth-type"] == "authenti
     end
 else
     local data
-    local sid, err = Auth.get_cookie("sid")
+    local sid, err = Auth.get_cookie("auth")
 
     ngx.log(ngx.ERR, "SID '", sid, "'")
     if sid ~= nil then
@@ -162,6 +162,10 @@ else
         if data == ngx.null then
             data = nil
         end
+
+        if data.ip ~= ngx.var.remote_addr then
+          data = nil
+        end 
     end
 
     if data ~= nil then
