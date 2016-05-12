@@ -11,9 +11,9 @@ read authentication headers started with `x-auth-`:
 
 ```
 Authenticate: web-rsa
-X-Auth-Type: authenticate
 X-Auth-User: username
-X-Auth-Sign: ...signature...
+X-Auth-Signature: ...crypto stamp signature...
+X-Auth-Hash: ...crypto stamp hash...
 ```
 
 If username has `@` character than authentication request should be sent on
@@ -49,6 +49,11 @@ bake build # Optional parameter is unix socket or port for proxying
 
 Or if you have no bake just use `bin/bake`
 
+Now you can configure `nginx-auth-proxy.nginx` to setup listening and redirection
+hosts. Than put this file into nginx configuration directory.
+
+## Manual dependencies installation
+
 Manual installation of dependencies:
 
 ```bash
@@ -59,7 +64,5 @@ git clone https://github.com/openresty/lua-resty-redis.git
 git clone https://github.com/pintsized/lua-resty-http.git
 git clone https://github.com/harningt/luajson.git
 git clone https://github.com/Tieske/uuid.git
+git clone https://github.com/golgote/neturl.git
 ```
-
-Now you can configure `nginx-auth-proxy.nginx` to setup listening and redirection
-hosts. Than put this file into nginx configuration directory.
