@@ -1,4 +1,4 @@
-lua_package_path "${DIR}/lua/lua-resty-http/lib/?.lua;${DIR}/lua/lua-resty-redis/lib/?.lua;${DIR}/lua/lua-resty-cookie/lib/?.lua;${DIR}/lua/luajson/lua/?.lua;${DIR}/lua/uuid/src/?.lua;";
+lua_package_path "${DIR}/lua/lua-resty-http/lib/?.lua;${DIR}/lua/lua-resty-redis/lib/?.lua;${DIR}/lua/lua-resty-cookie/lib/?.lua;${DIR}/lua/luajson/lua/?.lua;${DIR}/lua/uuid/src/?.lua;${DIR}/lua/neturl/lib/?.lua;";
 lua_package_cpath "${LUA_INCLUDE_CPATH}/?.so;;";
 
 server {

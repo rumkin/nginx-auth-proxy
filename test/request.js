@@ -1,29 +1,41 @@
 'use strict';
 
 const fetch = require('node-fetch');
-const ed = require('ed25519-supercop');
 const crypto = require('crypto');
 const chalk = require('chalk');
-
-var sign = ed.createKeyPair(crypto.createHash('sha256').update('12345678').digest());
+const cryptoStamp = require('crypto-stamp');
 
 var cookies;
+var holder = 'http://localhost';
+var key = cryptoStamp.createKey('user', '12345678');
+var stamp = cryptoStamp.generate({
+    action: 'auth',
+    signer: 'user@127.0.0.1',
+    holders: ['localhost']
+}, key.publicKey, key.secretKey);
 
 fetch('http://nginx-auth-proxy', {
     method: 'POST',
     headers: {
         'authorization': 'web-rsa',
-        'x-auth-type': 'authenticate',
-        'x-auth-user': 'user@127.0.0.1',
-        'x-auth-sign': ed.sign('nginx-auth-proxy', sign.publicKey, sign.secretKey).toString('hex'),
+        'x-auth-user': stamp.signer,
+        'x-auth-hash': stamp.hash,
+        'x-auth-signature': stamp.signature,
+        'origin': holder,
     }
 })
 .then(res => {
     cookies = res.headers.get('set-cookie');
-    if (! Array.isArray(cookies)) {
-        cookies = [cookies];
+    if (cookies) {
+        if (! Array.isArray(cookies)) {
+            cookies = [cookies];
+        }
     }
-    cookies = cookies.map(cookie => cookie.split(' ').shift().slice(0, -1));
+    else {
+        cookies = [];
+    }
+
+    cookies = cookies.map(cookie => (cookie||'').split(' ').shift().slice(0, -1));
     return res.text();
 })
 .then(text => console.log(chalk.yellow(text)))

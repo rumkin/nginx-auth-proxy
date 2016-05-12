@@ -22,6 +22,7 @@ function __install_deps {
     git clone https://github.com/Tieske/uuid.git
     git clone https://github.com/pintsized/lua-resty-http.git
     git clone https://github.com/harningt/luajson.git
+    git clone https://github.com/golgote/neturl.git
 
     # Json parser writtn in C (need compilation)
     # git clone https://github.com/openresty/lua-cjson.git
@@ -69,12 +70,13 @@ function __log {
 }
 
 function __run {
-    node test/auth-server.js 1999 &
+    node test/auth-server.js 1980 &
     AUTH_SRV_PID=$!
 
     SOCKET=/tmp/nginx/echo.sock
-    ls $(dirname $SOCKET) | grep $(basename $SOCKET) && rm $SOCKET
-    node test/echo.js $SOCKET &
+    ls $(dirname $SOCKET) | grep $(basename $SOCKET) && rm -rf $SOCKET
+    sudo -u www-data -- node test/echo.js $SOCKET &
+
 
     ECHO_SRV_PID=$!
 
@@ -82,7 +84,7 @@ function __run {
 
     FORCE_COLOR=1 node test/request.js
 
-    kill -s 9 $ECHO_SRV_PID
+    sudo kill -s 9 $ECHO_SRV_PID
     kill -s 9 $AUTH_SRV_PID
 }
 

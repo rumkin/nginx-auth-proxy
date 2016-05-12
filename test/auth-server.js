@@ -2,10 +2,9 @@
 
 const http = require('http');
 const port = process.argv[2] || 8080;
-const ed = require('ed25519-supercop');
-const crypto = require('crypto');
+const cryptoStamp = require('crypto-stamp');
 
-var sign = ed.createKeyPair(crypto.createHash('sha256').update('12345678').digest());
+var key = cryptoStamp.createKey('user', '12345678');
 
 http.createServer((req, res) => {
     // Read body
@@ -49,7 +48,7 @@ http.createServer((req, res) => {
             return;
         }
 
-        if (data.user !== 'user' || ! ed.verify(data.signature, 'nginx-auth-proxy', sign.publicKey)) {
+        if (data.signer !== 'user@127.0.0.1' || ! cryptoStamp.verify(data, key.publicKey)) {
             res.statusCode = 403;
             json({result: false});
             return;

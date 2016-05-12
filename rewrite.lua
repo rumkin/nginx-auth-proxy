@@ -8,6 +8,7 @@ local ck = require "resty.cookie"
 local json = require "json"
 local http = require "resty.http"
 local uuid = require "uuid"
+local url = require "net.url"
 
 Auth = {}
 
@@ -87,62 +88,79 @@ end
 
 local headers = ngx.req.get_headers()
 
-if headers["authorization"] == "web-rsa" and headers["x-auth-type"] == "authenticate" then
+if headers["authorization"] == "web-rsa" then
     local user = headers["x-auth-user"]
-    local signature = headers["x-auth-sign"]
-    local host
+    local signature = headers["x-auth-signature"]
+    local hash = headers["x-auth-hash"]
+    local origin, err = url.parse(headers["origin"])
+    local success = false
 
-    local i = user:find("@")
+    if not err then
+        local i = user:find("@")
 
-    if i == nil then
-        host = "127.0.0.1"
-    else
-        host = user:sub(i + 1)
-        user = user:sub(1, i - 1)
-    end
-
-    local data = json.encode({user=user, signature=signature})
-
-    local res, err = http.new():request_uri(
-        "http://" .. host .. ":1999",
-        {
-            method="POST",
-            headers={
-                ["Content-Type"] = "application/json",
-                -- ["Content-Length"] = #data,
-            },
-            body= data
-        }
-    )
-
-    local success = true
-    if err ~= nil then
-        ngx.log(ngx.ERR, "Request failed: ", err)
-    else
-        local body = json.decode(res.body)
-
-        if res.status ~= 200 then
-            if body.error then
-                ngx.log(ngx.WARN, "WebRSA request failed: ", body.error)
-            else
-                ngx.log(ngx.WARN, "WebRSA request failed: ", res.body)
-            end
+        if i == nil then
+            host = "127.0.0.1"
+        else
+            host = user:sub(i + 1)
+            -- user = user:sub(1, i - 1)
         end
 
-        if body.result == true then
-            local sid = uuid()
+        local holder = headers["origin"]
+        local data = json.encode({
+            action="auth",
+            signer=user,
+            holders={
+                [1]=origin.host
+            },
+            hash=hash,
+            signature=signature
+        })
 
-            ok, err = Auth.set_redis(sid, {user = user, signature = signature, ip = ngx.var.remote_addr})
-            if not ok then
-                ngx.log(ngx.ERR, "Redis error: ", err)
-            else
-                ok, err = Auth.set_cookie("auth", sid)
-                if not ok then
-                    ngx.log(ngx.Err, "Cookie error: ", err)
+        local res, err = http.new():request_uri(
+            "http://" .. host .. ":1980",
+            {
+                method="POST",
+                headers={
+                    ["Content-Type"] = "application/json",
+                },
+                body= data
+            }
+        )
+
+        if err ~= nil then
+            ngx.log(ngx.ERR, "Request failed: ", err)
+        else
+            local body = json.decode(res.body)
+
+            if res.status ~= 200 then
+                if body.error then
+                    ngx.log(ngx.WARN, "WebRSA request failed: ", body.error)
                 else
-                    success = true
+                    ngx.log(ngx.WARN, "WebRSA request failed: ", res.body)
                 end
             end
+
+            if body.result == true then
+                local sid = uuid()
+
+                ok, err = Auth.set_redis(sid, {
+                    user = user,
+                    signature = signature,
+                    ip = ngx.var.remote_addr
+                })
+
+                if not ok then
+                    ngx.log(ngx.ERR, "Redis error: ", err)
+                else
+                    ok, err = Auth.set_cookie("sid", sid)
+                    if not ok then
+                        ngx.log(ngx.ERR, "Cookie error: ", err)
+                    else
+                        success = true
+                    end
+                end
+            end
+
         end
     end
 
@@ -153,9 +171,8 @@ if headers["authorization"] == "web-rsa" and headers["x-auth-type"] == "authenti
     end
 else
     local data
-    local sid, err = Auth.get_cookie("auth")
+    local sid, err = Auth.get_cookie("sid")
 
-    ngx.log(ngx.ERR, "SID '", sid, "'")
     if sid ~= nil then
         data, err = Auth.get_redis(sid)
 
@@ -165,13 +182,12 @@ else
 
         if data.ip ~= ngx.var.remote_addr then
           data = nil
-        end 
+        end
     end
-
     if data ~= nil then
         ngx.req.set_header("authorization", 'web-rsa')
         ngx.req.set_header("x-auth-user", data.user)
-        ngx.req.set_header("x-auth-sign", data.signature)
+        ngx.req.set_header("x-auth-signature", data.signature)
         ngx.req.set_header("x-auth-verified", 1)
     else
         ngx.req.set_header("x-auth-verified", 0)
