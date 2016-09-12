@@ -1,7 +1,10 @@
 'use strict';
 
+const fs = require('fs');
+const grp = require('grp');
 const http = require('http');
-const port = process.argv[2] || 8080;
+const port = process.argv[2] || process.env.PORT || 8080;
+const group = process.argv[3] || process.env.GROUP || 'www-data';
 
 http.createServer((req, res) => {
     res.connection.on('finish', () => {
@@ -25,5 +28,6 @@ http.createServer((req, res) => {
     });
 })
 .listen(port, () => {
+    fs.chownSync(port, process.getuid(), grp.getgrnam(group).gr_gid);
     console.log('Server is started at port %s', port);
 });
