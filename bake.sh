@@ -1,20 +1,20 @@
-function __add_host {
+task:add_host() {
     sudo bash -c 'echo "127.0.0.1 nginx-auth-proxy" >> /etc/hosts'
 }
 
-function __remove_host {
+task:remove_host() {
     sudo bash -c 'sed -i "/nginx-auth-proxy/d" /etc/hosts'
 }
 
-function __add_nginx_config {
+task:add_nginx_config() {
     sudo ln -s $PWD/nginx-auth-proxy.nginx /etc/nginx/sites-enabled/nginx-auth-proxy
 }
 
-function __rm_nginx_config {
+task:rm_nginx_config() {
     sudo rm -f /etc/nginx/sites-enabled/nginx-auth-proxy
 }
 
-function __install_deps {
+task:install_deps() {
     [ ! -d "lua" ] &&mkdir lua
     cd lua
     git clone https://github.com/cloudflare/lua-resty-cookie.git
@@ -28,14 +28,16 @@ function __install_deps {
     # git clone https://github.com/openresty/lua-cjson.git
 }
 
-function __build {
+task:build() {
     if [ -z "$DIR" ]
     then
         DIR=$PWD
     fi
 
     # Socket could be empty but should be set manually
-    SOCKET=$1
+
+    SOCKET=${SOCKET:-$1}
+
     if [ -z "$SOCKET" ]
     then
         echo "Socket path isn't set. You should specify it manually" >&2
@@ -50,6 +52,9 @@ function __build {
     elif [ -d "/usr/lib/i686/lua/5.1" ] # Ubuntu, Debian; x64
     then
         LUA_INCLUDE_CPATH=/usr/lib/x86_64-linux-gnu/lua/5.1
+    elif [ -d "/usr/lib/x86_64-linux-gnu/lua/5.1" ] # Ubuntu, Debian; x64
+    then
+        LUA_INCLUDE_CPATH=/usr/lib/x86_64-linux-gnu/lua/5.1
     fi
 
     CFG=$(cat ./src/nginx-auth-proxy.nginx \
@@ -61,21 +66,21 @@ function __build {
     echo "$CFG" > nginx-auth-proxy.nginx
 }
 
-function __apply {
+task:apply() {
     sudo service nginx restart
 }
 
-function __log {
+task:log() {
     sudo tail -n 40 /var/log/nginx/error.log
 }
 
-function __run {
+task:run() {
     node test/auth-server.js 1980 &
     AUTH_SRV_PID=$!
 
     SOCKET=/tmp/nginx/echo.sock
     ls $(dirname $SOCKET) | grep $(basename $SOCKET) && rm -rf $SOCKET
-    sudo -u www-data -- node test/echo.js $SOCKET &
+    node test/echo.js $SOCKET &
 
 
     ECHO_SRV_PID=$!
@@ -84,12 +89,12 @@ function __run {
 
     FORCE_COLOR=1 node test/request.js
 
-    sudo kill -s 9 $ECHO_SRV_PID
+    kill -s 9 $ECHO_SRV_PID
     kill -s 9 $AUTH_SRV_PID
 }
 
-function __test {
-    result=$(__run)
+task:test() {
+    result=$(task:run)
     if [ $? -ne 0 ]
     then
         exit 1
